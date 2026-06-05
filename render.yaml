@@ -9,6 +9,8 @@ services:
         generateValue: true
       - key: FLASK_DEBUG
         value: false
+      - key: PYTHON_VERSION
+        value: 3.11.11
     disk:
       name: data
       mountPath: /data
