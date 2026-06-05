@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analysis Results — AI Budget Prediction System</title>
+  <meta name="description" content="AI-powered financial budget deviation analysis results with ML predictions and visualizations.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner-ring"></div>
+    <h5 class="fw-700 mb-2" style="color:#0f172a;font-family:'Poppins',sans-serif;">Processing...</h5>
+    <p class="text-muted mb-0" id="loadingMsg" style="font-size:.88rem;">Please wait</p>
+  </div>
+</div>
+
+<div class="app-wrapper">
+  <!-- ═══ Sidebar ═══════════════════════════════════════════ -->
+  <nav class="sidebar">
+    <div class="sidebar-brand d-flex align-items-center gap-3">
+      <div class="sidebar-brand-icon">
+        <i class="bi bi-graph-up-arrow" style="color:#fff;"></i>
+      </div>
+      <div class="sidebar-brand-name">AI Budget<br>Prediction</div>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">{{ session.user_name[0].upper() }}</div>
+      <div>
+        <div class="sidebar-user-name">{{ session.user_name }}</div>
+        <div class="sidebar-user-role">Analyst</div>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="sidebar-section-label">Navigation</div>
+      <a href="{{ url_for('dashboard') }}" class="sidebar-link" id="navDashboard">
+        <i class="bi bi-house-fill"></i> Dashboard
+      </a>
+      <a href="{{ url_for('analyze') }}" class="sidebar-link active" id="navAnalyze">
+        <i class="bi bi-cpu-fill"></i> Analysis Results
+      </a>
+
+      <div class="sidebar-section-label mt-3">Jump to Section</div>
+      <a href="#sectionSummary" class="sidebar-link" style="font-size:.82rem;">
+        <i class="bi bi-card-list"></i> Dataset Summary
+      </a>
+      <a href="#sectionDept" class="sidebar-link" style="font-size:.82rem;">
+        <i class="bi bi-building"></i> Department Analysis
+      </a>
+      <a href="#sectionRisk" class="sidebar-link" style="font-size:.82rem;">
+        <i class="bi bi-shield-exclamation"></i> Risk Classification
+      </a>
+      <a href="#sectionML" class="sidebar-link" style="font-size:.82rem;">
+        <i class="bi bi-robot"></i> ML Model
+      </a>
+      <a href="#sectionCharts" class="sidebar-link" style="font-size:.82rem;">
+        <i class="bi bi-bar-chart-line"></i> Visualizations
+      </a>
+
+      <div class="sidebar-section-label mt-3">Export</div>
+      <a href="{{ url_for('download_report') }}" class="sidebar-link" id="navPDF">
+        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+      </a>
+      <a href="{{ url_for('download_excel') }}" class="sidebar-link" id="navExcel">
+        <i class="bi bi-file-earmark-excel"></i> Download Excel
+      </a>
+
+      <div class="sidebar-section-label mt-3">Account</div>
+      <a href="{{ url_for('logout') }}" class="sidebar-link" id="navLogout">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem;">
+        <i class="bi bi-shield-check me-1"></i>Secured Session
+      </small>
+    </div>
+  </nav>
+
+  <!-- ═══ Main Content ══════════════════════════════════════ -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="d-flex align-items-center">
+        <button class="btn btn-sm me-3 d-lg-none" id="sidebarToggle"
+                style="background:none;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;">
+          <i class="bi bi-list" style="font-size:1.2rem;"></i>
+        </button>
+        <div>
+          <span class="topbar-title">Analysis Results</span>
+          <span class="topbar-breadcrumb ms-2">/ {{ filename }}</span>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('download_report') }}" class="btn-export-pdf btn" id="btnPDF">
+          <i class="bi bi-file-earmark-pdf me-1"></i>PDF Report
+        </a>
+        <a href="{{ url_for('download_excel') }}" class="btn-export btn" id="btnExcel">
+          <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm"
+           style="border-radius:8px;padding:9px 16px;font-weight:600;">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- ══ DATASET SUMMARY ════════════════════════════════ -->
+      <section id="sectionSummary">
+        <h4 class="fw-bold mb-3 d-flex align-items-center gap-2"
+            style="font-family:'Poppins',sans-serif;color:#0f172a;">
+          <span style="width:36px;height:36px;background:linear-gradient(135deg,#4361ee,#7209b7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-bar-chart-fill" style="color:#fff;font-size:.9rem;"></i>
+          </span>
+          Dataset Summary
+        </h4>
+
+        <!-- Dataset Stats Row -->
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-lg-3 fade-in">
+            <div class="stat-card primary">
+              <div class="stat-icon primary"><i class="bi bi-file-earmark-text"></i></div>
+              <div class="stat-value" data-count="{{ summary.total_records }}">{{ summary.total_records }}</div>
+              <div class="stat-label">Total Records</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3 fade-in fade-in-1">
+            <div class="stat-card secondary">
+              <div class="stat-icon secondary"><i class="bi bi-building"></i></div>
+              <div class="stat-value" data-count="{{ summary.total_departments }}">{{ summary.total_departments }}</div>
+              <div class="stat-label">Departments</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3 fade-in fade-in-2">
+            <div class="stat-card info">
+              <div class="stat-icon info"><i class="bi bi-geo-alt-fill"></i></div>
+              <div class="stat-value" data-count="{{ summary.total_regions }}">{{ summary.total_regions }}</div>
+              <div class="stat-label">Regions</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3 fade-in fade-in-3">
+            <div class="stat-card success">
+              <div class="stat-icon success"><i class="bi bi-tags-fill"></i></div>
+              <div class="stat-value" data-count="{{ summary.total_categories }}">{{ summary.total_categories }}</div>
+              <div class="stat-label">Categories</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Summary Row -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-lg-3 fade-in">
+            <div class="stat-card primary">
+              <div class="stat-icon primary"><i class="bi bi-currency-rupee"></i></div>
+              <div class="stat-value" style="font-size:1.2rem;">₹{{ '{:,.0f}'.format(summary.total_budget) }}</div>
+              <div class="stat-label">Total Budget</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3 fade-in fade-in-1">
+            <div class="stat-card warning">
+              <div class="stat-icon warning"><i class="bi bi-wallet2"></i></div>
+              <div class="stat-value" style="font-size:1.2rem;">₹{{ '{:,.0f}'.format(summary.total_actual) }}</div>
+              <div class="stat-label">Total Actual</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3 fade-in fade-in-2">
+            <div class="stat-card {{ 'danger' if summary.total_deviation > 0 else 'success' }}">
+              <div class="stat-icon {{ 'danger' if summary.total_deviation > 0 else 'success' }}">
+                <i class="bi bi-{{ 'arrow-up-circle' if summary.total_deviation > 0 else 'arrow-down-circle' }}"></i>
+              </div>
+              <div class="stat-value" style="font-size:1.2rem;">₹{{ '{:,.0f}'.format(summary.total_deviation|abs) }}</div>
+              <div class="stat-label">Total Deviation</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3 fade-in fade-in-3">
+            <div class="stat-card {{ 'danger' if summary.avg_deviation_pct > 15 else 'warning' if summary.avg_deviation_pct > 5 else 'success' }}">
+              <div class="stat-icon {{ 'danger' if summary.avg_deviation_pct > 15 else 'warning' if summary.avg_deviation_pct > 5 else 'success' }}">
+                <i class="bi bi-percent"></i>
+              </div>
+              <div class="stat-value">{{ summary.avg_deviation_pct }}%</div>
+              <div class="stat-label">Avg Deviation %</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="gradient-hr">
+
+      <!-- ══ DEPARTMENT ANALYSIS ═══════════════════════════ -->
+      <section id="sectionDept">
+        <div class="section-card fade-in">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <i class="bi bi-building-fill"></i>Department Analysis
+            </div>
+            <span class="badge bg-primary-subtle text-primary" style="border-radius:8px;padding:5px 12px;font-size:.75rem;">
+              Sorted by Deviation
+            </span>
+          </div>
+          <div class="section-card-body p-0">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Department</th>
+                    <th>Total Budget (₹)</th>
+                    <th>Total Actual (₹)</th>
+                    <th>Deviation (₹)</th>
+                    <th>Deviation %</th>
+                    <th>Risk</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in dept_records %}
+                  {% set risk_cls = 'high' if row.Deviation_Pct > 15 else 'medium' if row.Deviation_Pct > 5 else 'low' %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ row.Department }}</strong></td>
+                    <td>₹{{ '{:,.2f}'.format(row.Total_Budget) }}</td>
+                    <td>₹{{ '{:,.2f}'.format(row.Total_Actual) }}</td>
+                    <td class="{{ 'text-danger fw-semibold' if row.Deviation > 0 else 'text-success fw-semibold' }}">
+                      {{ '+' if row.Deviation > 0 else '' }}₹{{ '{:,.2f}'.format(row.Deviation) }}
+                    </td>
+                    <td>{{ row.Deviation_Pct }}%</td>
+                    <td><span class="risk-badge {{ risk_cls }}">{{ risk_cls.title() }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ REGION & CATEGORY ANALYSIS ══════════════════ -->
+      <div class="row g-4 mb-0">
+        <!-- Region -->
+        <div class="col-lg-6">
+          <div class="section-card fade-in">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <i class="bi bi-geo-alt-fill"></i>Region Analysis
+              </div>
+            </div>
+            <div class="section-card-body p-0">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Region</th>
+                      <th>Budget (₹)</th>
+                      <th>Actual (₹)</th>
+                      <th>Deviation (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in region_records %}
+                    <tr>
+                      <td><strong>{{ row.Region }}</strong></td>
+                      <td>₹{{ '{:,.0f}'.format(row.Total_Budget) }}</td>
+                      <td>₹{{ '{:,.0f}'.format(row.Total_Actual) }}</td>
+                      <td class="{{ 'text-danger' if row.Deviation > 0 else 'text-success' }}">
+                        {{ '+' if row.Deviation > 0 else '' }}₹{{ '{:,.0f}'.format(row.Deviation) }}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category -->
+        <div class="col-lg-6">
+          <div class="section-card fade-in fade-in-1">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <i class="bi bi-tags-fill"></i>Category Analysis
+              </div>
+              <span class="badge bg-warning-subtle text-warning-emphasis" style="border-radius:8px;padding:5px 12px;font-size:.75rem;">
+                By Actual Spend
+              </span>
+            </div>
+            <div class="section-card-body p-0">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Budget (₹)</th>
+                      <th>Actual (₹)</th>
+                      <th>Deviation (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in cat_records %}
+                    <tr>
+                      <td><strong>{{ row.Category }}</strong></td>
+                      <td>₹{{ '{:,.0f}'.format(row.Total_Budget) }}</td>
+                      <td>₹{{ '{:,.0f}'.format(row.Total_Actual) }}</td>
+                      <td class="{{ 'text-danger' if row.Deviation > 0 else 'text-success' }}">
+                        {{ '+' if row.Deviation > 0 else '' }}₹{{ '{:,.0f}'.format(row.Deviation) }}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="gradient-hr">
+
+      <!-- ══ RISK CLASSIFICATION ════════════════════════════ -->
+      <section id="sectionRisk" class="mb-4">
+        <h4 class="fw-bold mb-3 d-flex align-items-center gap-2"
+            style="font-family:'Poppins',sans-serif;color:#0f172a;">
+          <span style="width:36px;height:36px;background:linear-gradient(135deg,#ef476f,#b5179e);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-shield-exclamation" style="color:#fff;font-size:.9rem;"></i>
+          </span>
+          Risk Classification
+        </h4>
+        <div class="row g-3">
+          <div class="col-md-4 fade-in">
+            <div class="stat-card success text-center py-4">
+              <div class="display-4 fw-800 mb-2" style="color:#06d6a0;">{{ risk.Low }}</div>
+              <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                <span class="risk-badge low">Low Risk</span>
+              </div>
+              <small class="text-muted">Deviation ≤ 5%</small>
+            </div>
+          </div>
+          <div class="col-md-4 fade-in fade-in-1">
+            <div class="stat-card warning text-center py-4">
+              <div class="display-4 fw-800 mb-2" style="color:#f59e0b;">{{ risk.Medium }}</div>
+              <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                <span class="risk-badge medium">Medium Risk</span>
+              </div>
+              <small class="text-muted">Deviation 5% – 15%</small>
+            </div>
+          </div>
+          <div class="col-md-4 fade-in fade-in-2">
+            <div class="stat-card danger text-center py-4">
+              <div class="display-4 fw-800 mb-2" style="color:#ef476f;">{{ risk.High }}</div>
+              <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                <span class="risk-badge high badge-pulse">High Risk</span>
+              </div>
+              <small class="text-muted">Deviation > 15%</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="gradient-hr">
+
+      <!-- ══ MACHINE LEARNING ═══════════════════════════════ -->
+      <section id="sectionML" class="mb-4">
+        <h4 class="fw-bold mb-3 d-flex align-items-center gap-2"
+            style="font-family:'Poppins',sans-serif;color:#0f172a;">
+          <span style="width:36px;height:36px;background:linear-gradient(135deg,#4361ee,#7209b7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-robot" style="color:#fff;font-size:.9rem;"></i>
+          </span>
+          Machine Learning Model — RandomForest Regressor
+        </h4>
+
+        <div class="section-card fade-in">
+          <div class="section-card-body">
+            <div class="row g-3 mb-4">
+              <div class="col-12 col-md-4">
+                <div class="ml-metric">
+                  <div class="ml-metric-value">₹{{ '{:,.2f}'.format(ml_results.mae) }}</div>
+                  <div class="ml-metric-label">Mean Absolute Error</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="ml-metric">
+                  <div class="ml-metric-value">₹{{ '{:,.2f}'.format(ml_results.rmse) }}</div>
+                  <div class="ml-metric-label">Root Mean Square Error</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="ml-metric">
+                  <div class="ml-metric-value">{{ ml_results.r2 }}</div>
+                  <div class="ml-metric-label">R² Score</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3 align-items-center">
+              <div class="col-md-6">
+                <div class="p-4 rounded-3" style="background:#f8fafc;border:1px dashed #c7d2fe;">
+                  <h6 class="fw-bold mb-3" style="color:#1e293b;">
+                    <i class="bi bi-sliders me-2 text-primary"></i>Model Configuration
+                  </h6>
+                  <div class="d-flex flex-column gap-2" style="font-size:.85rem;">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Algorithm</span>
+                      <code>RandomForestRegressor</code>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Estimators</span>
+                      <code>100 trees</code>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Train / Test Split</span>
+                      <code>80% / 20%</code>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Encoding</span>
+                      <code>LabelEncoder</code>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Random State</span>
+                      <code>42</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-4 rounded-3" style="background:#f8fafc;border:1px dashed #c7d2fe;">
+                  <h6 class="fw-bold mb-3" style="color:#1e293b;">
+                    <i class="bi bi-input-cursor-text me-2 text-primary"></i>Feature Variables
+                  </h6>
+                  <div class="d-flex flex-wrap gap-2">
+                    {% for feat in ['Department','Category','Region','Payment Method','Budget Amount','Month','Year'] %}
+                    <span class="badge" style="background:#eef2ff;color:#4361ee;border:1px solid #c7d2fe;font-size:.78rem;border-radius:6px;padding:4px 10px;">
+                      {{ feat }}
+                    </span>
+                    {% endfor %}
+                  </div>
+                  <div class="mt-3">
+                    <small class="text-muted d-block mb-1">Target Variable</small>
+                    <span class="badge" style="background:#fdf2ff;color:#7209b7;border:1px solid #e9d5ff;font-size:.82rem;border-radius:6px;padding:5px 14px;">
+                      <i class="bi bi-bullseye me-1"></i>Deviation
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="gradient-hr">
+
+      <!-- ══ AI INSIGHTS ════════════════════════════════════ -->
+      <section id="sectionInsights" class="mb-4">
+        <h4 class="fw-bold mb-3 d-flex align-items-center gap-2"
+            style="font-family:'Poppins',sans-serif;color:#0f172a;">
+          <span style="width:36px;height:36px;background:linear-gradient(135deg,#f72585,#b5179e);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-lightbulb-fill" style="color:#fff;font-size:.9rem;"></i>
+          </span>
+          AI-Generated Insights
+        </h4>
+        <div class="row g-3">
+          {% for ins in insights %}
+          <div class="col-md-6 col-xl-4 fade-in fade-in-{{ loop.index }}">
+            <div class="insight-card {{ ins.color }}">
+              <div class="insight-icon {{ ins.color }}">
+                <i class="bi {{ ins.icon }}"></i>
+              </div>
+              <div class="insight-title">{{ ins.title }}</div>
+              <div class="insight-text">{{ ins.text | safe }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <hr class="gradient-hr">
+
+      <!-- ══ VISUALIZATIONS ══════════════════════════════════ -->
+      <section id="sectionCharts" class="mb-4">
+        <h4 class="fw-bold mb-3 d-flex align-items-center gap-2"
+            style="font-family:'Poppins',sans-serif;color:#0f172a;">
+          <span style="width:36px;height:36px;background:linear-gradient(135deg,#118ab2,#06d6a0);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-bar-chart-line-fill" style="color:#fff;font-size:.9rem;"></i>
+          </span>
+          Interactive Visualizations
+        </h4>
+
+        <!-- Row 1 -->
+        <div class="row g-4 mb-0">
+          <div class="col-lg-8">
+            <div class="chart-card fade-in">
+              <div class="chart-card-header">
+                <i class="bi bi-bar-chart-fill text-primary"></i>
+                <span class="chart-card-title">Budget vs Actual Amount</span>
+              </div>
+              <div class="chart-container">
+                <div id="chartBudgetVsActual"
+                     data-chart='{{ charts.budget_vs_actual | tojson }}'
+                     style="width:100%;height:340px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="chart-card fade-in fade-in-1">
+              <div class="chart-card-header">
+                <i class="bi bi-pie-chart-fill text-warning"></i>
+                <span class="chart-card-title">Risk Distribution</span>
+              </div>
+              <div class="chart-container">
+                <div id="chartRiskDist"
+                     data-chart='{{ charts.risk_distribution | tojson }}'
+                     style="width:100%;height:340px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="row g-4 mb-0 mt-0">
+          <div class="col-lg-6">
+            <div class="chart-card fade-in">
+              <div class="chart-card-header">
+                <i class="bi bi-bar-chart-fill text-danger"></i>
+                <span class="chart-card-title">Department-Wise Deviation</span>
+              </div>
+              <div class="chart-container">
+                <div id="chartDeptDeviation"
+                     data-chart='{{ charts.dept_deviation | tojson }}'
+                     style="width:100%;height:340px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="chart-card fade-in fade-in-1">
+              <div class="chart-card-header">
+                <i class="bi bi-pie-chart-fill text-info"></i>
+                <span class="chart-card-title">Region-Wise Deviation</span>
+              </div>
+              <div class="chart-container">
+                <div id="chartRegionDeviation"
+                     data-chart='{{ charts.region_deviation | tojson }}'
+                     style="width:100%;height:340px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="row g-4 mb-0 mt-0">
+          <div class="col-lg-7">
+            <div class="chart-card fade-in">
+              <div class="chart-card-header">
+                <i class="bi bi-graph-up text-success"></i>
+                <span class="chart-card-title">Monthly Budget Trend</span>
+              </div>
+              <div class="chart-container">
+                <div id="chartMonthlyTrend"
+                     data-chart='{{ charts.monthly_trend | tojson }}'
+                     style="width:100%;height:340px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="chart-card fade-in fade-in-1">
+              <div class="chart-card-header">
+                <i class="bi bi-bar-chart-steps text-primary"></i>
+                <span class="chart-card-title">Top 10 Departments by Deviation</span>
+              </div>
+              <div class="chart-container">
+                <div id="chartTop10"
+                     data-chart='{{ charts.top10_dept | tojson }}'
+                     style="width:100%;height:340px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="gradient-hr">
+
+      <!-- ══ PREDICTION RESULT ══════════════════════════════ -->
+      <section id="sectionPrediction" class="mb-4">
+        <h4 class="fw-bold mb-3 d-flex align-items-center gap-2"
+            style="font-family:'Poppins',sans-serif;color:#0f172a;">
+          <span style="width:36px;height:36px;background:linear-gradient(135deg,#4361ee,#f72585);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-bullseye" style="color:#fff;font-size:.9rem;"></i>
+          </span>
+          Prediction Result
+        </h4>
+
+        <div class="prediction-card fade-in">
+          <div class="row align-items-center g-4">
+            <div class="col-lg-4 text-center text-lg-start">
+              <small style="color:rgba(255,255,255,.55);font-size:.8rem;text-transform:uppercase;letter-spacing:1px;">
+                Expected Future Deviation
+              </small>
+              <div class="prediction-amount mt-1">
+                ₹{{ '{:,.2f}'.format(prediction.future_deviation|abs) }}
+              </div>
+              <div class="mt-3">
+                {% if prediction.risk_level == 'High' %}
+                <span class="badge badge-pulse" style="background:#ef476f;font-size:1rem;padding:8px 20px;border-radius:10px;">
+                  <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ prediction.risk_level }} Risk
+                </span>
+                {% elif prediction.risk_level == 'Medium' %}
+                <span class="badge" style="background:#f59e0b;font-size:1rem;padding:8px 20px;border-radius:10px;">
+                  <i class="bi bi-exclamation-circle-fill me-2"></i>{{ prediction.risk_level }} Risk
+                </span>
+                {% else %}
+                <span class="badge" style="background:#06d6a0;font-size:1rem;padding:8px 20px;border-radius:10px;">
+                  <i class="bi bi-check-circle-fill me-2"></i>{{ prediction.risk_level }} Risk
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-lg-8">
+              <div class="p-4 rounded-3" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
+                <h5 style="color:#a5b4fc;font-family:'Poppins',sans-serif;font-weight:700;margin-bottom:12px;">
+                  <i class="bi bi-lightbulb-fill me-2" style="color:#ffd166;"></i>Recommended Action
+                </h5>
+                <p style="color:rgba(255,255,255,.8);font-size:.95rem;margin-bottom:0;line-height:1.7;">
+                  {{ prediction.recommendation }}
+                </p>
+              </div>
+
+              <div class="row g-3 mt-2">
+                <div class="col-sm-4">
+                  <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:800;color:#a5b4fc;">{{ ml_results.r2 }}</div>
+                    <div style="font-size:.72rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;">R² Accuracy</div>
+                  </div>
+                </div>
+                <div class="col-sm-4">
+                  <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:800;color:#f9a8d4;">100</div>
+                    <div style="font-size:.72rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;">Forest Trees</div>
+                  </div>
+                </div>
+                <div class="col-sm-4">
+                  <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:800;color:#6ee7b7;">80/20</div>
+                    <div style="font-size:.72rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;">Train/Test</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ EXPORT SECTION ══════════════════════════════════ -->
+      <section id="sectionExport" class="mb-4">
+        <div class="section-card fade-in">
+          <div class="section-card-body text-center py-5">
+            <h5 class="fw-bold mb-2" style="font-family:'Poppins',sans-serif;color:#0f172a;">
+              <i class="bi bi-download me-2 text-primary"></i>Export Analysis Results
+            </h5>
+            <p class="text-muted mb-4" style="font-size:.9rem;">
+              Download the complete analysis report or processed dataset for offline use
+            </p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+              <a href="{{ url_for('download_report') }}" class="btn-export-pdf btn" id="btnPDFBottom">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Download Analysis Report (PDF)
+              </a>
+              <a href="{{ url_for('download_excel') }}" class="btn-export btn" id="btnExcelBottom">
+                <i class="bi bi-file-earmark-excel me-2"></i>Download Processed Dataset (Excel)
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /app-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

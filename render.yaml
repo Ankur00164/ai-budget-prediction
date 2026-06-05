@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ai-budget-prediction
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: false
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
